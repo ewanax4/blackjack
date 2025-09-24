@@ -10,6 +10,9 @@ document.querySelector("#hit-button").addEventListener("click", hitButton);
 document.querySelector("#stand-button").addEventListener("click", standButton);
 document.querySelector("#bet-button").addEventListener("click", addBet);
 
+const betInput = document.querySelector("#bet-input");
+const betButton = document.querySelector("#bet-button");
+
 //new audio object
 const hitSound = new Audio("audio/swish.mp3");
 
@@ -51,14 +54,20 @@ let blackjack = {
 
 let YOU = blackjack["you"];
 let DEALER = blackjack["dealer"];
-let BET = parseInt(document.querySelector("#bet-input").value);
+let BET = parseInt(betInput.value, 10) || 0;
+let betInPot = 0;
 const deck = new Deck();
 deck.shuffle();
 
 function dealButton() {
+    if (betInPot <= 0) {
+        showBetError("Place a bet before dealing.");
+        return;
+    }
 
   // Resets the players score and cards
     resetGame();
+    clearBetError();
 
   // 1 for YOU > 1 for DEALER > 1 for YOU > face down for DEALER
     dealCardsTimer(YOU, 1000);
@@ -72,6 +81,8 @@ function dealButton() {
     togButton("hit", true);
     togButton("stand", true);
 
+    if (betButton) betButton.disabled = true;
+
   //finish the game auto (TODO)
 }
 
@@ -84,14 +95,46 @@ function hitButton() {
 }
 
 function addBet() {
-    if (YOU["balance"] > 0 && YOU["balance"] > BET) {
-        YOU["balance"] -= BET;
-        console.log("betting:", YOU["balance"]);
-        document.querySelector(YOU["balanceSpan"]).textContent = YOU["balance"];
-    } else {
-        // screen message (TODO)
-        console.log("No balance aviable");
-  }
+    if (betButton && betButton.disabled) return;
+
+    clearBetError();
+    const betValue = parseInt(betInput.value, 10);
+
+    if (Number.isNaN(betValue) || betValue <= 0) {
+        showBetError("Enter a bet greater than 0.");
+        return;
+    }
+
+    const availableBalance = YOU["balance"] + betInPot;
+
+    if (betValue > availableBalance) {
+        showBetError("No balance available");
+        console.log("No balance available");
+        return;
+    }
+
+    YOU["balance"] = availableBalance - betValue;
+    BET = betValue;
+    betInPot = betValue;
+    betInput.value = BET;
+    updateBalanceDisplay();
+    console.log("Bet placed:", BET, "Remaining balance:", YOU["balance"]);
+}
+
+function updateBalanceDisplay() {
+    document.querySelector(YOU["balanceSpan"]).textContent = YOU["balance"];
+}
+
+function showBetError(message) {
+    if (!betInput) return;
+    betInput.setCustomValidity(message);
+    betInput.reportValidity();
+    betInput.focus();
+}
+
+function clearBetError() {
+    if (!betInput) return;
+    betInput.setCustomValidity("");
 }
 
 // resetGame: restarts the game, function called every dealButton()
@@ -224,12 +267,14 @@ function computeWinner() {
     if (!winner) {
         return;
     }
+
+    const wager = betInPot;
   // If you are the winner, then show it
-    else if (winner === YOU) {
+    if (winner === YOU) {
         document.querySelector(YOU["scoreSpan"]).textContent =
             "WON (" + YOU["score"] + ")";
         document.querySelector(YOU["scoreSpan"]).style.color = "green";
-        winChangeBalance(winner);
+        winChangeBalance(winner, wager);
         upgradeStreak(winner);
     }
   // If the dealer is the winner, then show it
@@ -247,12 +292,13 @@ function computeWinner() {
             "DRAW (" + DEALER["score"] + ")";
         document.querySelector(YOU["scoreSpan"]).style.color = "yellow";
         document.querySelector(DEALER["scoreSpan"]).style.color = "yellow";
-        winChangeBalance(winner);
+        winChangeBalance(winner, wager);
         upgradeStreak(winner);
     }
     togButton("deal", true);
     togButton("hit", false, true);
     togButton("stand", false, true);
+    finalizeRound();
 }
 
 
@@ -276,6 +322,8 @@ function togButton(name, state, instant) {
     // SHOW IT
     if (state) {
         btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+        btn.disabled = false;
         // Make it appear in 0.3s
         if (!instant) {
             setTimeout(function addThis() {
@@ -288,25 +336,40 @@ function togButton(name, state, instant) {
     // HIDE IT
     else {
         btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+        btn.disabled = true;
         // Make it dissapear in 0.3s
         if (!instant) {
             setTimeout(function removeThis() {
-                btn.style.visibility = "none";
+                btn.style.visibility = "hidden";
             }, 300);
         }
         // Make it dissapear instantly
-        else btn.style.visibility = "none";
+        else btn.style.visibility = "hidden";
     }
     return false;
 }
 
-function winChangeBalance(winner) {
+function finalizeRound() {
+    betInPot = 0;
+    if (betButton) betButton.disabled = false;
+    clearBetError();
+}
+
+function winChangeBalance(winner, wager) {
     //if win return profit
+    if (typeof wager !== "number" || wager <= 0) {
+        updateBalanceDisplay();
+        return;
+    }
+
     if (winner === YOU) {
-        YOU["balance"] += BET * 2;
-        document.querySelector(YOU["balanceSpan"]).textContent = YOU["balance"];
-    } else if (winner === "DRAW") YOU["balance"] += BET;
-    console.log("finale balance: ", YOU["balance"]);
+        YOU["balance"] += wager * 2;
+    } else if (winner === "DRAW") {
+        YOU["balance"] += wager;
+    }
+    updateBalanceDisplay();
+    console.log("final balance: ", YOU["balance"]);
 }
 
 function upgradeStreak(winner) {

@@ -187,6 +187,45 @@ body {
   transform: translateY(-50%);
 }
 
+.status-card--wager {
+  min-width: 200px;
+  background: linear-gradient(160deg, rgba(8, 59, 49, 0.72), rgba(3, 22, 18, 0.85));
+  border: 1px solid rgba(255, 224, 130, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 224, 130, 0.18);
+  overflow: hidden;
+}
+
+.status-card__progress {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.status-card__progress-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffe082, #ffb300);
+  transition: width 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+}
+
+.status-card__progress-fill.is-active {
+  opacity: 1;
+}
+
+.status-card__foot {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 224, 130, 0.8);
+}
+
 .status-card--profit {
   min-width: 200px;
   background: linear-gradient(160deg, rgba(6, 55, 40, 0.7), rgba(4, 28, 21, 0.85));
@@ -714,11 +753,56 @@ body {
   gap: 0.75rem;
 }
 
+.controls__wager {
+  position: relative;
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  background: rgba(2, 24, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 0.6rem;
+  overflow: hidden;
+  grid-column: 1 / -1;
+}
+
+.controls__wager::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 224, 130, 0.18), transparent 65%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.wager-recap__row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: rgba(241, 248, 245, 0.88);
+}
+
+.wager-recap__label {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.wager-recap__value {
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .controls__toggles {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1rem;
+  grid-column: 1 / -1;
 }
 
 .toggle {
@@ -783,10 +867,16 @@ body {
 }
 
 .controls__play {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.controls__play-grid {
+  display: grid;
+  width: 100%;
   gap: 0.75rem;
-  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .button {
@@ -853,6 +943,18 @@ body {
 .button--action {
   background: linear-gradient(135deg, #4fc3f7, #0288d1);
   color: #001b2e;
+}
+
+.button--accent.button--ready,
+.button--action.button--ready,
+.button--danger.button--ready {
+  box-shadow: 0 0 0 2px rgba(255, 224, 130, 0.35), 0 18px 32px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+.button--danger {
+  background: linear-gradient(135deg, #ff8a80, #d32f2f);
+  color: #3a0606;
 }
 
 .game__links {
@@ -1468,6 +1570,14 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .controls__wager {
+    margin-top: 1.25rem;
+  }
+
+  .controls__play-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
   .table__card-row {
     width: 100%;
   }
@@ -1487,6 +1597,10 @@ body {
   .chip-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .controls__play-grid {
+    grid-template-columns: 1fr;
   }
 
   .controls__actions,

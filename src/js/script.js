@@ -15,6 +15,12 @@ const betButton = document.querySelector("#bet-button");
 const potAmountLabel = document.querySelector("#bet-pot-amount");
 const potChipStack = document.querySelector("#pot-chip-stack");
 const balanceChipStack = document.querySelector("#balance-chip-stack");
+const currentBetValue = document.querySelector("#current-bet-value");
+const betMeterFill = document.querySelector("#bet-meter-fill");
+const betMeterLabel = document.querySelector("#bet-meter-label");
+const lockedBetRecap = document.querySelector("#locked-bet-recap");
+const potentialPayoutLabel = document.querySelector("#potential-payout");
+const totalRiskLabel = document.querySelector("#total-risk");
 const quickBetButtons = document.querySelectorAll("[data-quick-bet]");
 const clearBetButton = document.querySelector("#clear-bet-button");
 const doubleBetButton = document.querySelector("#double-bet-button");
@@ -51,9 +57,17 @@ const vaultChipStack = document.querySelector("#vault-chip-stack");
 const insuranceAmountLabel = document.querySelector("#insurance-amount");
 const insuranceChipStack = document.querySelector("#insurance-chip-stack");
 const jackpotAmountLabel = document.querySelector("#jackpot-amount");
+const doubleDownButton = document.querySelector("#double-down-button");
+const surrenderButton = document.querySelector("#surrender-button");
 
 //new audio object
 const hitSound = new Audio("audio/swish.mp3");
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+});
 
 quickBetButtons.forEach((button) => {
     button.addEventListener("click", () => handleQuickBet(button));
@@ -65,6 +79,8 @@ if (repeatBetButton) repeatBetButton.addEventListener("click", repeatBet);
 if (halfBetButton) halfBetButton.addEventListener("click", halfBet);
 if (tipDealerButton) tipDealerButton.addEventListener("click", tipDealer);
 if (insuranceButton) insuranceButton.addEventListener("click", toggleInsurance);
+if (doubleDownButton) doubleDownButton.addEventListener("click", doubleDown);
+if (surrenderButton) surrenderButton.addEventListener("click", surrenderHand);
 if (autoRebetToggle) autoRebetToggle.addEventListener("change", () => {
     YOU["autoRebet"] = autoRebetToggle.checked;
     setStatusMessage(
@@ -159,6 +175,9 @@ let lastLockedBet = 0;
 let insuranceBet = 0;
 let insuranceLocked = false;
 let jackpotAmount = 5000;
+let roundActive = false;
+let doubleDownUsed = false;
+let surrenderUsed = false;
 const deck = new Deck();
 deck.shuffle();
 
@@ -173,6 +192,11 @@ function dealButton() {
     lastHandBet = betInPot;
     if (betInPot > 0) lastLockedBet = betInPot;
     updateInsuranceDisplay();
+
+    roundActive = true;
+    doubleDownUsed = false;
+    surrenderUsed = false;
+    updateActionButtons();
 
     // Resets the players score and cards
     resetGame();
@@ -194,16 +218,149 @@ function dealButton() {
 
     if (betButton) betButton.disabled = true;
 
+    updateActionButtons();
+
     //finish the game auto (TODO)
 }
 
-async function hitButton() {
-    // If you pressed stand, then you shouldn't be able to request a new card
-    if (YOU["standing"]) return;
-    setStatusMessage("Player hits!", "info");
+async function performPlayerHit(message = "Player hits!") {
+    if (!roundActive || YOU["standing"]) return;
+    setStatusMessage(message, "info");
     await dealCARDS(YOU);
-    //auto deal
     if (YOU["score"] > 21) standButton();
+    updateActionButtons();
+}
+
+async function hitButton() {
+    doubleDownUsed = true;
+    surrenderUsed = true;
+    updateActionButtons();
+    await performPlayerHit("Player hits!");
+}
+
+async function doubleDown() {
+    if (!roundActive || YOU["standing"] || doubleDownUsed) return;
+    if (YOU["hand"].length < 2) {
+        setStatusMessage("Wait for both cards before doubling down.", "alert");
+        return;
+    }
+    if (betInPot <= 0) {
+        setStatusMessage("Lock in a bet first.", "alert");
+        return;
+    }
+    if (YOU["balance"] < betInPot) {
+        setStatusMessage("Not enough balance to double the wager.", "alert");
+        flashElement(bankAnchor, "is-glowing");
+        return;
+    }
+
+    const additional = betInPot;
+    animateChipTransfer(additional, bankAnchor, potAnchor, {
+        label: formatCurrency(additional),
+        variant: "bet",
+    });
+    flashElement(potAnchor, "is-glowing");
+    showBetSpotlight(betInPot + additional);
+    seedJackpot(Math.floor(additional * 0.05));
+
+    YOU["balance"] -= additional;
+    betInPot += additional;
+    BET = betInPot;
+    lastLockedBet = betInPot;
+    doubleDownUsed = true;
+    surrenderUsed = true;
+    updateActionButtons();
+
+    updateBalanceDisplay();
+    updatePotDisplay();
+
+    setStatusMessage(`Double down! Wager ${formatCurrency(betInPot)}.`, "info");
+    await performPlayerHit("Double down! One last card...");
+    setTimeout(() => standButton(), 500);
+}
+
+function surrenderHand() {
+    if (!roundActive || YOU["standing"] || surrenderUsed) return;
+    if (YOU["hand"].length < 2) {
+        setStatusMessage("Wait for your opening cards before surrendering.", "alert");
+        return;
+    }
+    if (betInPot <= 0) {
+        setStatusMessage("No active wager to surrender.", "alert");
+        return;
+    }
+
+    surrenderUsed = true;
+    doubleDownUsed = true;
+    roundActive = false;
+    updateActionButtons();
+
+    const wager = betInPot;
+    const refund = Math.floor(wager / 2);
+    const loss = wager - refund;
+
+    if (refund > 0) {
+        animateChipTransfer(refund, potAnchor, bankAnchor, {
+            label: formatCurrency(refund),
+            variant: "return",
+        });
+        YOU["balance"] += refund;
+    }
+    if (loss > 0) {
+        animateChipTransfer(loss, potAnchor, dealerAnchor, {
+            label: formatCurrency(loss),
+            variant: "dealer",
+        });
+    }
+    if (loss > 0) {
+        burnChips(loss);
+        seedJackpot(Math.floor(loss * 0.1));
+    } else {
+        showEvenSpark();
+    }
+
+    YOU["standing"] = true;
+    lastLockedBet = wager;
+    betInPot = 0;
+
+    const insuranceNet = settleInsurance(DEALER);
+    let roundProfit = -loss + insuranceNet;
+    YOU["lastProfit"] = roundProfit;
+    YOU["lifetimeProfit"] += roundProfit;
+    YOU["handsPlayed"] += 1;
+    YOU["streak"] = 0;
+
+    updateBalanceDisplay();
+    updatePotDisplay();
+    updateStatsDisplay();
+    updateActionButtons();
+
+    const playerScoreSpan = document.querySelector(YOU["scoreSpan"]);
+    const dealerScoreSpan = document.querySelector(DEALER["scoreSpan"]);
+    if (playerScoreSpan) {
+        playerScoreSpan.textContent = "SURRENDER";
+        setScoreState(playerScoreSpan, "lose");
+        triggerPulse(playerScoreSpan);
+    }
+    if (dealerScoreSpan) {
+        dealerScoreSpan.textContent = "WIN";
+        setScoreState(dealerScoreSpan, "win");
+        triggerPulse(dealerScoreSpan);
+    }
+
+    const dealerDisplayScore = DEALER["score"] > 0 ? DEALER["score"] : "--";
+    addHistoryEntry(
+        DEALER,
+        wager,
+        roundProfit,
+        YOU["score"],
+        dealerDisplayScore,
+        insuranceNet,
+        { label: "Surrender", note: refund > 0 ? `Refund ${formatCurrency(refund)}` : undefined }
+    );
+
+    setStatusMessage("You surrendered. Half wager returned.", "alert");
+    finalizeRound();
 }
 
 function addBet() {
@@ -283,7 +440,6 @@ function addBet() {
         setStatusMessage("Bet cleared", "neutral");
     }
 
-    console.log("Bet placed:", BET, "Remaining balance:", YOU["balance"]);
 }
 
 function updateBalanceDisplay() {
@@ -297,6 +453,8 @@ function updateBalanceDisplay() {
     renderChipStack(balanceChipStack, YOU["balance"]);
     lastBalanceValue = YOU["balance"];
     updateStatsDisplay();
+    updateBetSummary();
+    updateActionButtons();
 }
 
 function updatePotDisplay() {
@@ -304,10 +462,44 @@ function updatePotDisplay() {
         potAmountLabel.textContent = formatCurrency(betInPot);
         if (betInPot !== lastPotValue) {
             triggerPulse(potAmountLabel);
+            if (currentBetValue) {
+                triggerPulse(currentBetValue);
+            }
+            if (lockedBetRecap) {
+                triggerPulse(lockedBetRecap);
+            }
         }
     }
     renderChipStack(potChipStack, betInPot);
     lastPotValue = betInPot;
+    updateBetSummary();
+}
+
+function updateBetSummary() {
+    if (currentBetValue) {
+        currentBetValue.textContent = formatCurrency(betInPot);
+    }
+    if (lockedBetRecap) {
+        lockedBetRecap.textContent = formatCurrency(betInPot);
+    }
+    const bankroll = YOU["balance"] + betInPot;
+    const ratio = bankroll > 0 ? Math.min(1, betInPot / bankroll) : 0;
+    const ratioPercent = Math.round(ratio * 100);
+    if (betMeterFill) {
+        const widthPercent = betInPot > 0 ? Math.max(6, ratioPercent) : 0;
+        betMeterFill.style.width = `${widthPercent}%`;
+        betMeterFill.classList.toggle("is-active", betInPot > 0);
+    }
+    if (betMeterLabel) {
+        betMeterLabel.textContent = betInPot > 0 ? `${ratioPercent}% of bankroll` : "No bet locked";
+    }
+    if (potentialPayoutLabel) {
+        potentialPayoutLabel.textContent = formatCurrency(betInPot * 2);
+    }
+    if (totalRiskLabel) {
+        const totalRisk = betInPot + insuranceBet;
+        totalRiskLabel.textContent = formatCurrency(totalRisk);
+    }
 }
 
 function showBetError(message) {
@@ -363,6 +555,9 @@ async function dealCARDS(player) {
     showScore(player);
 
   // After every card deal, the game should check if there's a winner
+    if (player === YOU) {
+        updateActionButtons();
+    }
     computeWinner();
 }
 
@@ -503,6 +698,9 @@ function computeWinner() {
     if (!winner) {
         return;
     }
+
+    roundActive = false;
+    updateActionButtons();
 
     const wager = betInPot;
     let roundProfit = 0;
@@ -646,6 +844,9 @@ function finalizeRound() {
     if (betButton) betButton.disabled = false;
     insuranceLocked = false;
     if (insuranceButton) insuranceButton.disabled = false;
+    roundActive = false;
+    doubleDownUsed = false;
+    surrenderUsed = false;
     clearBetError();
     updatePotDisplay();
     if (insuranceBet > 0) {
@@ -667,6 +868,7 @@ function finalizeRound() {
             setTimeout(() => updateTargetBet(nextBet), 1200);
         }
     }
+    updateActionButtons();
 }
 
 function winChangeBalance(winner, wager) {
@@ -701,7 +903,6 @@ function winChangeBalance(winner, wager) {
     }
     updateBalanceDisplay();
     updatePotDisplay();
-    console.log("final balance: ", YOU["balance"]);
 }
 
 function upgradeStreak(winner) {
@@ -713,22 +914,20 @@ function upgradeStreak(winner) {
         streakElement.textContent = YOU["streak"];
         triggerPulse(streakElement);
     }
-    console.log(YOU["streak"]);
 }
 
 function formatCurrency(amount) {
     const safeAmount = Number.isFinite(amount) ? Math.round(amount) : 0;
-    const sign = safeAmount < 0 ? "-" : "";
-    const absolute = Math.abs(safeAmount);
-    return `${sign}$${absolute.toLocaleString("en-US")}`;
+    return currencyFormatter.format(safeAmount);
 }
 
 function formatSignedCurrency(amount) {
     if (!Number.isFinite(amount) || amount === 0) {
-        return formatCurrency(0);
+        return currencyFormatter.format(0);
     }
     const prefix = amount > 0 ? "+" : "-";
-    return `${prefix}${formatCurrency(Math.abs(amount))}`;
+    const absolute = Math.abs(Math.round(amount));
+    return `${prefix}${currencyFormatter.format(absolute)}`;
 }
 
 function updateStatsDisplay() {
@@ -824,9 +1023,18 @@ function updateInsuranceDisplay() {
         insuranceButton.textContent = insuranceBet > 0 ? "Insurance On" : "Add Insurance";
         insuranceButton.disabled = insuranceLocked;
     }
+    updateBetSummary();
 }
 
-function addHistoryEntry(result, bet, profit, playerScore, dealerScore, insuranceNet) {
+function addHistoryEntry(
+    result,
+    bet,
+    profit,
+    playerScore,
+    dealerScore,
+    insuranceNet,
+    options = {}
+) {
     if (!historyList) return;
     const outcome = result === YOU ? "win" : result === DEALER ? "lose" : "draw";
     const item = document.createElement("li");
@@ -836,17 +1044,22 @@ function addHistoryEntry(result, bet, profit, playerScore, dealerScore, insuranc
         hour: "2-digit",
         minute: "2-digit",
     });
+    const badgeLabel = options.label || outcome.toUpperCase();
     const insuranceTag =
         insuranceNet && insuranceNet !== 0
             ? `<span class="history-list__tag">Insurance ${formatSignedCurrency(insuranceNet)}</span>`
             : "";
+    const extraTag = options.note
+        ? `<span class="history-list__tag">${options.note}</span>`
+        : "";
 
     item.innerHTML = `
-        <span class="history-list__badge">${outcome.toUpperCase()}</span>
+        <span class="history-list__badge">${badgeLabel}</span>
         <div class="history-list__details">
           <span class="history-list__scores">${playerScore} - ${dealerScore}</span>
           <span class="history-list__bet">Bet ${formatCurrency(bet)}</span>
           ${insuranceTag}
+          ${extraTag}
         </div>
         <span class="history-list__profit">${displayProfit}</span>
         <span class="history-list__time">${timeLabel}</span>
@@ -1133,6 +1346,25 @@ function renderChipStack(container, amount) {
     }
 }
 
+function updateActionButtons() {
+    const canAct = roundActive && !YOU["standing"];
+    if (doubleDownButton) {
+        const canDouble =
+            canAct &&
+            !doubleDownUsed &&
+            betInPot > 0 &&
+            YOU["hand"].length === 2 &&
+            YOU["balance"] >= betInPot;
+        doubleDownButton.disabled = !canDouble;
+        doubleDownButton.classList.toggle("button--ready", canDouble);
+    }
+    if (surrenderButton) {
+        const canSurrender = canAct && !surrenderUsed && betInPot > 0 && YOU["hand"].length === 2;
+        surrenderButton.disabled = !canSurrender;
+        surrenderButton.classList.toggle("button--ready", canSurrender);
+    }
+}
+
 function setStatusMessage(message, variant = "info") {
     if (!statusBanner) return;
     statusBanner.textContent = message;
@@ -1266,4 +1498,5 @@ updateVaultDisplay();
 updateBalanceDisplay();
 updatePotDisplay();
 applyHighRollerMode(YOU["highRoller"]);
+updateActionButtons();
 setStatusMessage("Place your bet to begin", "info");

@@ -24,6 +24,14 @@
             <div class="chip-stack chip-stack--bank" id="balance-chip-stack"></div>
             <div class="chip-anchor" id="bank-anchor"></div>
           </div>
+          <div class="status-card status-card--wager">
+            <span class="status-card__label">Locked bet</span>
+            <span class="status-card__value" id="current-bet-value">$0</span>
+            <div class="status-card__progress">
+              <div class="status-card__progress-fill" id="bet-meter-fill"></div>
+            </div>
+            <div class="status-card__foot" id="bet-meter-label">No bet locked</div>
+          </div>
           <div class="status-card">
             <span class="status-card__label">Win streak</span>
             <span class="status-card__value" id="game-streak">0</span>
@@ -126,6 +134,20 @@
             <button class="button button--accent" id="insurance-button">Add Insurance</button>
             <button class="button button--ghost" id="tip-dealer-button">Tip Dealer</button>
           </div>
+          <div class="controls__wager" id="wager-recap">
+            <div class="wager-recap__row">
+              <span class="wager-recap__label">Locked bet</span>
+              <span class="wager-recap__value" id="locked-bet-recap">$0</span>
+            </div>
+            <div class="wager-recap__row">
+              <span class="wager-recap__label">Potential payout</span>
+              <span class="wager-recap__value" id="potential-payout">$0</span>
+            </div>
+            <div class="wager-recap__row">
+              <span class="wager-recap__label">Total risk</span>
+              <span class="wager-recap__value" id="total-risk">$0</span>
+            </div>
+          </div>
           <div class="controls__toggles">
             <label class="toggle">
               <input type="checkbox" id="auto-rebet-toggle" />
@@ -146,8 +168,12 @@
         </div>
         <div class="controls__play">
           <button class="button button--deal" id="deal-button">Deal</button>
-          <button class="button button--action" id="stand-button">Stand</button>
-          <button class="button button--action" id="hit-button">Hit</button>
+          <div class="controls__play-grid">
+            <button class="button button--action" id="hit-button">Hit</button>
+            <button class="button button--action" id="stand-button">Stand</button>
+            <button class="button button--accent" id="double-down-button">Double down</button>
+            <button class="button button--danger" id="surrender-button">Surrender</button>
+          </div>
         </div>
         <div class="game__links">
           <a href="#">History</a>

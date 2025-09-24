@@ -1,59 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Blackjack Game</title>
     <link rel="stylesheet" href="./src/css/style.css" />
     <link rel="shortcut icon" href="#" />
-    <meta />
   </head>
   <body>
     <div class="game">
-      <div class="game__header">
-        <h1>Blackjack</h1>
-      </div>
-      <div class="game__box">
-        <div class="game__box-table">
-          <div class="game__box-table-cards">
-            <div class="game__box-cards-dealer" id="game__box-dealer"></div>
-            <div class="game__box-points-dealer">
-              Dealer: <span id="dealer-result">0</span>
+      <div class="game__effects-layer" id="effects-layer"></div>
+      <header class="game__header">
+        <div class="game__title-block">
+          <h1 class="game__title">Blackjack Royale</h1>
+          <p class="game__subtitle">
+            Place your chips and take your shot against the house.
+          </p>
+        </div>
+        <div class="game__status">
+          <div class="status-card status-card--balance">
+            <span class="status-card__label">Balance</span>
+            <span class="status-card__value" id="game-money">$1,000</span>
+            <div class="chip-stack chip-stack--bank" id="balance-chip-stack"></div>
+            <div class="chip-anchor" id="bank-anchor"></div>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Win streak</span>
+            <span class="status-card__value" id="game-streak">0</span>
+          </div>
+        </div>
+      </header>
+      <main class="game__table">
+        <div class="table">
+          <div class="table__felt">
+            <div class="table__side table__side--dealer">
+              <div class="table__label">
+                <span class="table__label-text">Dealer</span>
+                <span class="score-pill" id="dealer-result">0</span>
+              </div>
+              <div class="table__card-row" id="game__box-dealer"></div>
+              <div class="chip-anchor chip-anchor--dealer" id="dealer-anchor"></div>
             </div>
-            <div class="game__box-cards-player" id="game__box-player"></div>
-            <div class="game__box-points-player">
-              You: <span id="player-result">0</span>
+            <div class="table__pot">
+              <div class="table__pot-inner" id="pot-anchor">
+                <span class="table__pot-label">Pot</span>
+                <span class="table__pot-amount" id="bet-pot-amount">$0</span>
+                <div class="chip-stack chip-stack--pot" id="pot-chip-stack"></div>
+              </div>
+              <div class="table__announcement" id="status-banner">
+                Place your bet to begin
+              </div>
+            </div>
+            <div class="table__side table__side--player">
+              <div class="table__label">
+                <span class="table__label-text">Player</span>
+                <span class="score-pill" id="player-result">0</span>
+              </div>
+              <div
+                class="table__card-row table__card-row--player"
+                id="game__box-player"
+              ></div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="game__buttons">
-        <input
-          class="game__buttons-input"
-          type="number"
-          id="bet-input"
-          value="100"
-        />
-        <button class="game__buttons-button" id="bet-button">Bet</button>
-        <button class="game__buttons-button" id="deal-button">Deal</button>
-        <button class="game__buttons-button" id="stand-button">Stand</button>
-        <button class="game__buttons-button" id="hit-button">Hit</button>
-      </div>
-      <div class="game__stats">
-        <h3>Balance: <b>$</b><span id="game-money">1000</span></h3>
-        <h3>Win streak: <span id="game-streak">0</span></h3>
-        <h3><a href="#">History</a></h3>
-        <h3><a href="./rules.html">Rules</a></h3>
-        <h3><a href="#">Login</a></h3>
-      </div>
+      </main>
+      <section class="game__controls">
+        <div class="controls__betting">
+          <div class="controls__input">
+            <label class="controls__label" for="bet-input">Bet amount</label>
+            <div class="controls__input-group">
+              <input
+                class="controls__input-field"
+                type="number"
+                id="bet-input"
+                min="0"
+                step="10"
+                value="100"
+              />
+              <button class="button button--primary" id="bet-button">Lock bet</button>
+            </div>
+          </div>
+          <div class="controls__quick">
+            <span class="controls__label">Quick chips</span>
+            <div class="controls__quick-grid">
+              <button class="chip-button" data-quick-bet="10">$10</button>
+              <button class="chip-button" data-quick-bet="25">$25</button>
+              <button class="chip-button" data-quick-bet="50">$50</button>
+              <button class="chip-button" data-quick-bet="100">$100</button>
+              <button class="chip-button" data-quick-bet="250">$250</button>
+            </div>
+          </div>
+          <div class="controls__actions">
+            <button class="button button--ghost" id="clear-bet-button">Clear</button>
+            <button class="button button--ghost" id="double-bet-button">Double</button>
+            <button class="button button--accent" id="max-bet-button">All in</button>
+          </div>
+        </div>
+        <div class="controls__play">
+          <button class="button button--deal" id="deal-button">Deal</button>
+          <button class="button button--action" id="stand-button">Stand</button>
+          <button class="button button--action" id="hit-button">Hit</button>
+        </div>
+        <div class="game__links">
+          <a href="#">History</a>
+          <a href="./rules.html">Rules</a>
+          <a href="#">Login</a>
+        </div>
+      </section>
     </div>
     <script src="./src/js/script.js" type="module"></script>
   </body>
 </html>
-
-<!--Notas en Desarrollo
-
-> fix cards position in player box
-> fix game__box-points boxes 
-> animate showing cards
-
--->

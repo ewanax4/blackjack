@@ -1,59 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Blackjack Game</title>
     <link rel="stylesheet" href="./src/css/style.css" />
     <link rel="shortcut icon" href="#" />
-    <meta />
   </head>
   <body>
     <div class="game">
-      <div class="game__header">
-        <h1>Blackjack</h1>
-      </div>
-      <div class="game__box">
-        <div class="game__box-table">
-          <div class="game__box-table-cards">
-            <div class="game__box-cards-dealer" id="game__box-dealer"></div>
-            <div class="game__box-points-dealer">
-              Dealer: <span id="dealer-result">0</span>
+      <div class="game__effects-layer" id="effects-layer"></div>
+      <header class="game__header">
+        <div class="game__title-block">
+          <h1 class="game__title">Blackjack Royale</h1>
+          <p class="game__subtitle">
+            Place your chips and take your shot against the house.
+          </p>
+        </div>
+        <div class="game__status">
+          <div class="status-card status-card--balance">
+            <span class="status-card__label">Balance</span>
+            <span class="status-card__value" id="game-money">$1,000</span>
+            <div class="chip-stack chip-stack--bank" id="balance-chip-stack"></div>
+            <div class="chip-anchor" id="bank-anchor"></div>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Win streak</span>
+            <span class="status-card__value" id="game-streak">0</span>
+          </div>
+          <div class="status-card status-card--profit">
+            <span class="status-card__label">Lifetime Profit</span>
+            <span class="status-card__value" id="game-profit">$0</span>
+            <div class="status-card__meta">
+              <span id="game-hands">0 hands</span>
+              <span id="game-best-win">Best win: $0</span>
             </div>
-            <div class="game__box-cards-player" id="game__box-player"></div>
-            <div class="game__box-points-player">
-              You: <span id="player-result">0</span>
+          </div>
+          <div class="status-card status-card--tier">
+            <span class="status-card__label">VIP Tier</span>
+            <span class="status-card__value" id="bank-tier">Bronze</span>
+            <div class="tier-meter">
+              <div class="tier-meter__fill" id="tier-progress"></div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="game__buttons">
-        <input
-          class="game__buttons-input"
-          type="number"
-          id="bet-input"
-          value="100"
-        />
-        <button class="game__buttons-button" id="bet-button">Bet</button>
-        <button class="game__buttons-button" id="deal-button">Deal</button>
-        <button class="game__buttons-button" id="stand-button">Stand</button>
-        <button class="game__buttons-button" id="hit-button">Hit</button>
-      </div>
-      <div class="game__stats">
-        <h3>Balance: <b>$</b><span id="game-money">1000</span></h3>
-        <h3>Win streak: <span id="game-streak">0</span></h3>
-        <h3><a href="#">History</a></h3>
-        <h3><a href="./rules.html">Rules</a></h3>
-        <h3><a href="#">Login</a></h3>
-      </div>
+      </header>
+      <main class="game__table">
+        <div class="table">
+          <div class="table__felt">
+            <div class="table__side table__side--dealer">
+              <div class="table__label">
+                <span class="table__label-text">Dealer</span>
+                <span class="score-pill" id="dealer-result">0</span>
+              </div>
+              <div class="table__card-row" id="game__box-dealer"></div>
+              <div class="chip-anchor chip-anchor--dealer" id="dealer-anchor"></div>
+            </div>
+            <div class="table__pot">
+              <div class="table__pot-inner" id="pot-anchor">
+                <span class="table__pot-label">Pot</span>
+                <span class="table__pot-amount" id="bet-pot-amount">$0</span>
+                <div class="chip-stack chip-stack--pot" id="pot-chip-stack"></div>
+              </div>
+              <div class="table__side-pots">
+                <div class="side-pot" id="insurance-display">
+                  <span class="side-pot__label">Insurance</span>
+                  <span class="side-pot__amount" id="insurance-amount">$0</span>
+                  <div class="chip-stack chip-stack--insurance" id="insurance-chip-stack"></div>
+                  <div class="chip-anchor chip-anchor--insurance" id="insurance-anchor"></div>
+                </div>
+                <div class="side-pot" id="jackpot-display">
+                  <span class="side-pot__label">Jackpot Seed</span>
+                  <span class="side-pot__amount" id="jackpot-amount">$5,000</span>
+                </div>
+              </div>
+              <div class="table__announcement" id="status-banner">
+                Place your bet to begin
+              </div>
+            </div>
+            <div class="table__side table__side--player">
+              <div class="table__label">
+                <span class="table__label-text">Player</span>
+                <span class="score-pill" id="player-result">0</span>
+              </div>
+              <div
+                class="table__card-row table__card-row--player"
+                id="game__box-player"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <section class="game__controls">
+        <div class="controls__betting">
+          <div class="controls__input">
+            <label class="controls__label" for="bet-input">Bet amount</label>
+            <div class="controls__input-group">
+              <input
+                class="controls__input-field"
+                type="number"
+                id="bet-input"
+                min="0"
+                step="10"
+                value="100"
+              />
+              <button class="button button--primary" id="bet-button">Lock bet</button>
+            </div>
+          </div>
+          <div class="controls__quick">
+            <span class="controls__label">Quick chips</span>
+            <div class="controls__quick-grid">
+              <button class="chip-button" data-quick-bet="10">$10</button>
+              <button class="chip-button" data-quick-bet="25">$25</button>
+              <button class="chip-button" data-quick-bet="50">$50</button>
+              <button class="chip-button" data-quick-bet="100">$100</button>
+              <button class="chip-button" data-quick-bet="250">$250</button>
+            </div>
+          </div>
+          <div class="controls__actions">
+            <button class="button button--ghost" id="clear-bet-button">Clear</button>
+            <button class="button button--ghost" id="double-bet-button">Double</button>
+            <button class="button button--accent" id="max-bet-button">All in</button>
+            <button class="button button--ghost" id="half-bet-button">Half</button>
+            <button class="button button--ghost" id="repeat-bet-button">Repeat</button>
+            <button class="button button--accent" id="insurance-button">Add Insurance</button>
+            <button class="button button--ghost" id="tip-dealer-button">Tip Dealer</button>
+          </div>
+          <div class="controls__toggles">
+            <label class="toggle">
+              <input type="checkbox" id="auto-rebet-toggle" />
+              <span class="toggle__decor"></span>
+              <span class="toggle__label">Auto rebet</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="auto-stand-toggle" />
+              <span class="toggle__decor"></span>
+              <span class="toggle__label">Auto stand on 17</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="high-roller-toggle" />
+              <span class="toggle__decor"></span>
+              <span class="toggle__label">High roller mode</span>
+            </label>
+          </div>
+        </div>
+        <div class="controls__play">
+          <button class="button button--deal" id="deal-button">Deal</button>
+          <button class="button button--action" id="stand-button">Stand</button>
+          <button class="button button--action" id="hit-button">Hit</button>
+        </div>
+        <div class="game__links">
+          <a href="#">History</a>
+          <a href="./rules.html">Rules</a>
+          <a href="#">Login</a>
+        </div>
+      </section>
+      <section class="game__summary">
+        <div class="summary-card summary-card--history">
+          <div class="summary-card__header">
+            <h2>Hand history</h2>
+            <button class="summary-card__clear" id="clear-history-button">Clear</button>
+          </div>
+          <ul class="history-list" id="hand-history"></ul>
+        </div>
+        <div class="summary-card summary-card--bank">
+          <div class="summary-card__header">
+            <h2>Bankroll tracker</h2>
+          </div>
+          <div class="vault-display">
+            <div class="vault-display__info">
+              <span class="vault-display__label">Vault balance</span>
+              <span class="vault-display__value" id="vault-balance">$0</span>
+            </div>
+            <div class="chip-stack chip-stack--vault" id="vault-chip-stack"></div>
+            <div class="chip-anchor chip-anchor--vault" id="vault-anchor"></div>
+          </div>
+          <div class="bank-meter">
+            <div class="bank-meter__bar">
+              <div class="bank-meter__fill" id="bank-trend-fill"></div>
+            </div>
+            <div class="bank-meter__legend">
+              <span id="bank-trend-label">Even</span>
+              <span id="last-profit-label">Last result: Even</span>
+            </div>
+          </div>
+          <div class="summary-card__actions">
+            <button class="button button--ghost" id="save-bank-button">Vault $100</button>
+            <button class="button button--ghost" id="withdraw-bank-button">Withdraw $100</button>
+          </div>
+          <p class="summary-card__note">
+            Grow your vault, climb tiers, and unlock the high roller lounge.
+          </p>
+        </div>
+      </section>
     </div>
     <script src="./src/js/script.js" type="module"></script>
   </body>
 </html>
-
-<!--Notas en Desarrollo
-
-> fix cards position in player box
-> fix game__box-points boxes 
-> animate showing cards
-
--->
